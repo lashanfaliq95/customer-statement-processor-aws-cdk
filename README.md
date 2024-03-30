@@ -1,8 +1,15 @@
-# Welcome to your CDK TypeScript project
+# Welcome to Customer Statement Processor 
 
-This is a blank project for CDK development with TypeScript.
+This is a project to read csv/xml files and validate them and return the failed rows.
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+This is currently deployed in the cloud and also can be run locally.
+
+* `Front end` 
+* `Input bucket`
+* `Output bucket`
+
+## High level architecture diagram
+
 
 ## Useful commands
 

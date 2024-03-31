@@ -95,7 +95,7 @@ export class TestStack extends cdk.Stack {
         cpu: 512, // Default is 256
         desiredCount: 1, // Default is 1
         taskImageOptions: {
-          image: ecs.AssetImage.fromAsset("."),
+          image: ecs.AssetImage.fromAsset("./customer-statement-processor"),
           containerPort: 8000,
           environment: {
             AWS_ACCESS_KEY_ID: "AKIAQ3EGUOJUPNUWLHW7",

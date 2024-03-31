@@ -1,0 +1,15 @@
+{
+  "extends": "./node_modules/gts/tsconfig-google.json",
+  "include": [
+    "src/**/*",
+    "src/*.ts",
+    "test/**/*.ts"
+  ],
+  "compileOnSave": true,
+  "compilerOptions": {
+    "outDir": "build"
+},
+"exclude": [
+    "node_modules",
+]
+}

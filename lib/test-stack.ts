@@ -169,20 +169,21 @@ export class TestStack extends cdk.Stack {
             AWS_ACCESS_KEY_ID: "AKIAQ3EGUOJUPNUWLHW7",
             AWS_SECRET_ACCESS_KEY: "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",
             AWS_REGION: "eu-west-1",
-            INPUT_BUCKET_NAME: "teststack-inputbucketcsr2d487c64-xl5w86kvrqjg",
-            OUTPUT_BUCKET_NAME:
-              "teststack-outputbucketcsre20eaf00-0drv7sle2kzz",
+            INPUT_BUCKET_NAME: inputBucket.bucketName!,
+            OUTPUT_BUCKET_NAME: outputBucket.bucketName!,
           },
         },
         memoryLimitMiB: 2048, // Default is 512
         publicLoadBalancer: true, // Default is true
         listenerPort: 8000,
         assignPublicIp: true,
-        healthCheck: {
-          command: ["CMD-SHELL", "curl -f http://localhost:8000/ || exit 1"],
-        },
       }
     );
+
+    service.targetGroup.configureHealthCheck({
+      path: "/",
+      port: "8000",
+    });
 
     service.taskDefinition.executionRole?.addManagedPolicy(
       ManagedPolicy.fromAwsManagedPolicyName(

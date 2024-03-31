@@ -7,7 +7,6 @@ import * as s3Deployment from "aws-cdk-lib/aws-s3-deployment";
 import * as path from "path";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import { ManagedPolicy } from "aws-cdk-lib/aws-iam";
-import { Duration } from "aws-cdk-lib";
 export class TestStack extends cdk.Stack {
   constructor(scope: cdk.App, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
@@ -50,16 +49,6 @@ export class TestStack extends cdk.Stack {
       })
     );
 
-    // const vpc = new ec2.Vpc(this, "VpcCSR", {
-    //   subnetConfiguration: [
-    //     {
-    //       name: "publicSubnet",
-    //       subnetType: ec2.SubnetType.PUBLIC,
-    //     },
-    //   ],
-    //   natGateways: 0,
-    // });
-
     const webSiteBucket = new s3.Bucket(this, "customerStatementFrontend", {
       websiteIndexDocument: "index.html",
       publicReadAccess: true,
@@ -88,63 +77,6 @@ export class TestStack extends cdk.Stack {
         resources: [webSiteBucket.arnForObjects("*")],
       })
     );
-
-    // const cluster = new ecs.Cluster(this, "MyCluster");
-
-    // const fargateTask = new ecs.FargateTaskDefinition(this, "FargateTaskCSR", {
-    //   cpu: 256,
-    //   memoryLimitMiB: 512,
-    // });
-
-    // fargateTask.addContainer("GinContainer", {
-    //   image: ecs.ContainerImage.fromAsset("./customer-statement-processor"),
-    //   environmentFiles: [ecs.AssetEnvironmentFile.fromAsset("test.env")],
-    //   portMappings: [{ containerPort: 8000 }],
-    // });
-
-    // const mySecurityGroupWithoutInlineRules = new ec2.SecurityGroup(
-    //   this,
-    //   "SecurityGroup",
-    //   {
-    //     vpc,
-    //     description: "Allow ssh access to ec2 instances",
-    //     allowAllOutbound: true,
-    //     disableInlineRules: true,
-
-    //   }
-    // );
-    // //This will add the rule as an external cloud formation construct
-    // mySecurityGroupWithoutInlineRules.addIngressRule(
-    //   ec2.Peer.anyIpv4(),
-    //   ec2.Port.tcp(8000),
-    //   "allow ssh access from the world"
-    // );
-
-    // // Create a load-balanced Fargate service and make it public
-    // const loadBalance = new ecs_patterns.ApplicationLoadBalancedFargateService(
-    //   this,
-    //   "MyFargateService",
-    //   {
-    //     cluster: cluster, // Required
-    //     taskSubnets: {
-    //       subnetType: ec2.SubnetType.PUBLIC,
-    //     },
-    //     cpu: 512, // Default is 256
-    //     desiredCount: 6, // Default is 1
-    //     taskDefinition: fargateTask,
-    //     memoryLimitMiB: 2048, // Default is 512
-    //     publicLoadBalancer: true, // Default is true
-    //     assignPublicIp: true,
-    //     listenerPort: 8000,
-    //     securityGroups: [mySecurityGroupWithoutInlineRules],
-
-    //   }
-    // );
-
-    // loadBalance.targetGroup.configureHealthCheck({
-    //   healthyThresholdCount: 2,
-    //   unhealthyThresholdCount: 4,
-    // });
 
     const vpc = new ec2.Vpc(this, "MyVpc", {
       maxAzs: 3, // Default is all AZs in region

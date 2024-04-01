@@ -1,4 +1,5 @@
 import { S3 } from "@aws-sdk/client-s3";
+import axios from 'axios'
 
 const s3Connector = new S3({
   region: "eu-west-1",
@@ -8,15 +9,19 @@ const s3Connector = new S3({
   },
 });
 
-export default async function readFromS3(file: string) {
+
+export default async function readFromS3(file: string, bucket: string) {
   try {
-    console.log(file);
-    return await s3Connector.getObject({
-      Bucket: process.env.REACT_APP_INPUT_BUCKET_NAME!,
-      Key: file,
-    });
+    const res = await axios.get(
+      `${process.env.REACT_APP_BASE_URL}/bucket/${bucket}/${file}`,    {responseType: 'blob'},
+
+    );    
+    const blob = new Blob([res?.data])
+
+    return blob
   } catch (ex) {
     console.error("Reading data from s3 failed.", ex);
     return;
   }
 }
+

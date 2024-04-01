@@ -1,63 +1,78 @@
-import { ListObjectsV2Command } from "@aws-sdk/client-s3";
-import { S3Client } from "@aws-sdk/client-s3";
 import { useEffect, useState } from "react";
-import ListGroup from "react-bootstrap/ListGroup";
-import getFileListFromS3 from "./getFileListFromS3";
-import readFromS3 from "./readFromS3";
-import { Button } from "react-bootstrap";
+import readFromS3 from "./helpers/readFromS3";
 import { saveAs } from "file-saver";
-import "bootstrap/dist/css/bootstrap.min.css";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import FileUpload from "./components/FileUpload";
-
-const filePattern = /\.[0-9a-z]+$/i;
-const csvFormat = "text/csv;charset=utf-8;";
-const xmlFormat = "text/xml;charset=utf-8;";
-const pdfFormat = "application/pdf";
-
-const getFormat = (file: string) => {
-  const ext = file.match(filePattern)?.[0];
-  let format;
-  if (ext === ".csv") {
-    format = csvFormat;
-  } else if (ext === ".xml") {
-    format = xmlFormat;
-  } else {
-    format = pdfFormat;
-  }
-  return format;
-};
+import FileList from "./components/FileList";
+import { getFormat } from "./utils";
+import axios from "axios";
+import Button from "react-bootstrap/Button";
 
 function App() {
-  const [inputList, setInputList] = useState([]);
-  const [outputList, setOutputList] = useState([]);
+  // const [inputList, setInputList] = useState([]);
+  // const [outputList, setOutputList] = useState([]);
 
-  useEffect(() => {
-    // declare the async data fetching function
-    const fetchData = async () => {
-      // get the data from the api
-      const inputList = await getFileListFromS3(true);
-      const outputList = await getFileListFromS3(false);
+  // const { isPending, isError, data, error } = useQuery({
+  //   queryKey: ["job"],
+  //   queryFn: async () => {
+  //     return await axios.get(`${process.env.REACT_APP_BASE_URL}/run-job-cloud`);
+  //   },
+  // });
 
-      setInputList(inputList);
-      setOutputList(outputList);
-    };
+  const { data: inputList } = useQuery({
+    queryKey: ["inputList"],
+    queryFn: async () => {
+      const res = await axios.get(
+        `${process.env.REACT_APP_BASE_URL}/file-list/bucket/${process.env.REACT_APP_INPUT_BUCKET_NAME}`
+      );
+      return res.data;
+    },
+  });
 
-    // call the function
-    fetchData()
-      // make sure to catch any error
-      .catch(console.error);
-  }, []);
+  const { data: outputList } = useQuery({
+    queryKey: ["outputList"],
+    queryFn: async () => {
+      const res = await axios.get(
+        `${process.env.REACT_APP_BASE_URL}/file-list/bucket/${process.env.REACT_APP_OUTPUT_BUCKET_NAME}`
+      );
+      return res.data;
+    },
+  });
 
-  const asyncFunc = async (file: string) => {
-    const blob: any = await readFromS3(file);
-    console.log(blob);
-    const content = await blob.Body.transformToByteArray();
-    console.log("content", content, content.toString());
-    console.log(file, getFormat(file));
-    const finalBlob = new Blob([content], {
+  const mutation = useMutation({
+    mutationFn: () => {
+      return axios.post(`${process.env.REACT_APP_BASE_URL}/run-job-cloud`);
+    },
+  });
+
+  const uploadMutation = useMutation({
+    mutationFn: (data: any) => {
+      const config = {
+        headers: {
+          "content-type": "multipart/form-data",
+        },
+      };
+      return axios.post(
+        `${process.env.REACT_APP_BASE_URL}/upload-file/bucket/${process.env
+          .REACT_APP_INPUT_BUCKET_NAME!}`,
+        data,
+        config
+      );
+    },
+  });
+
+  const asyncFunc = async (file: string, isInputBucket: boolean) => {
+    const blob: any = await readFromS3(
+      file,
+      isInputBucket
+        ? process.env.REACT_APP_INPUT_BUCKET_NAME!
+        : process.env.REACT_APP_OUTPUT_BUCKET_NAME!
+    );
+    
+    const finalBlob = new Blob([blob], {
       type: getFormat(file),
     });
 
@@ -65,34 +80,40 @@ function App() {
   };
 
   return (
-    <Container>
+    <Container fluid style={{ padding: "5%" }}>
+      <Row style={{ textAlign: "center", marginBottom: "20px" }}>
+        <h1>Customer statement processor</h1>
+      </Row>
+
       <Row>
         <Col md="4">
-          {" "}
-          <ListGroup>
-            {inputList?.map(({ Key }) => (
-              <>
-                <ListGroup.Item key={Key}></ListGroup.Item>
-                {Key} <Button onClick={() => asyncFunc(Key)}>download</Button>
-              </>
-            ))}
-          </ListGroup>
+          {inputList && (
+            <FileList list={inputList} onClick={asyncFunc} isInputBucket />
+          )}
+        </Col>
+        <Col
+          md="4"
+          style={{
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <FileUpload
+            OnFileUpload={(data: any) => uploadMutation.mutate(data)}
+          />
+          <Button
+            variant="secondary"
+            onClick={() => {
+              mutation.mutate();
+            }}
+            size="sm"
+            style={{ width: "30%", marginTop: "10px", alignSelf: "center" }}
+          >
+            Run Job
+          </Button>
         </Col>
         <Col md="4">
-          <FileUpload />
-        </Col>
-        <Col md="4">
-          {" "}
-          Output
-          <ListGroup>
-            {" "}
-            {outputList?.map(({ Key }) => (
-              <>
-                <ListGroup.Item key={Key}></ListGroup.Item>
-                {Key} <Button onClick={() => asyncFunc(Key)}>download</Button>
-              </>
-            ))}
-          </ListGroup>
+          {outputList && <FileList list={outputList} onClick={asyncFunc} />}
         </Col>
       </Row>
     </Container>

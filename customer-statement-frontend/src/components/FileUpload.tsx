@@ -1,18 +1,21 @@
 import { useCallback, useState, Dispatch, SetStateAction } from "react";
 import { useDropzone } from "react-dropzone";
 import { PreviewImageWrapper, DropZoneBody, PreviewImage } from "./styles";
-import { writeToS3 } from "../UploadToS3";
+import { FiImage } from "react-icons/fi";
 
-export default function FileUpload() {
+export default function FileUpload({OnFileUpload}:any) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    setSelectedFile(acceptedFiles[0]);
-    writeToS3(acceptedFiles[0], "records.pdf");
+    const formData = new FormData();
+formData.append('file', acceptedFiles[0]);
+formData.append('name', (acceptedFiles[0] as any).path);
+OnFileUpload(formData)
+    // setSelectedFile(acceptedFiles[0]);
+    // writeToS3(acceptedFiles[0], (acceptedFiles[0] as any).path);
   }, []);
 
   const { getRootProps, getInputProps, open } = useDropzone({
-    // accept: { "image/*": [".jpeg", ".png"] },
     multiple: false,
     noClick: true,
     noKeyboard: true,
@@ -21,30 +24,20 @@ export default function FileUpload() {
   });
 
   return (
-    <DropZoneBody
-      {...getRootProps()}
-      onClick={open}
-      // style={{
-      //   "&:hover": {
-      //     cursor: "pointer",
-      //   },
-      // }}
-    >
+    <DropZoneBody {...getRootProps()} onClick={open}>
       <input {...getInputProps()} />
-      <div>
-        <div>Drag image here (only .png and .jpeg formats. max size 256kb)</div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          textAlign: "center",
+        }}
+      >
+        <div>Drag file here to upload to input s3</div>
         <div>
-          {selectedFile ? (
-            <PreviewImageWrapper>
-              <PreviewImage
-                src={selectedFile ? URL.createObjectURL(selectedFile) : "asd"}
-              />
-            </PreviewImageWrapper>
-          ) : (
-            <></>
-            // <FiImage size={100}></FiImage>
-          )}
+          <FiImage size={100}></FiImage>
         </div>
+        <span> {selectedFile && (selectedFile as any).path}</span>
       </div>
     </DropZoneBody>
   );

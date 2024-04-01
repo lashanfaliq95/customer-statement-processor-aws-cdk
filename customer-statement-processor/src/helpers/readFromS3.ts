@@ -1,9 +1,9 @@
 import s3Connector from '../connectors/s3Connector';
 
-export async function readFromS3(file: string) {
+export async function readFromS3(file: string, bucket?:string) {
   try {
     return await s3Connector.getObject({
-      Bucket: process.env.INPUT_BUCKET_NAME!,
+      Bucket: bucket||process.env.INPUT_BUCKET_NAME!,
       Key: file,
     });
   } catch (ex) {

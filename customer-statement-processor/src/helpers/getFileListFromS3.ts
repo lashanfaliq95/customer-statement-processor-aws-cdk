@@ -10,9 +10,9 @@ const s3ClientConnector = new S3Client({
   },
 });
 
-export const getListFromS3 = async () => {
+export const getListFromS3 = async (bucketName?:string,isNotFiltered?:boolean) => {
   const command = new ListObjectsV2Command({
-    Bucket: process.env.INPUT_BUCKET_NAME!,
+    Bucket: bucketName||process.env.INPUT_BUCKET_NAME!,
     MaxKeys: 100,
   });
 
@@ -36,10 +36,10 @@ export const getListFromS3 = async () => {
         ({Key}: {Key: string}) =>
           path.extname(Key!) === '.csv' || path.extname(Key!) === '.xml'
       )
-      .map(({Key}: {Key: string}) => Key);
 
-    return contentsList;
+    return Promise.resolve(isNotFiltered? contents:contentsList);
   } catch (err) {
     console.error(err);
+    Promise.reject(err)
   }
 };

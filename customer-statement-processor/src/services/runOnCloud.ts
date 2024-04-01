@@ -12,10 +12,10 @@ export default async function runOnCloud() {
     console.log('No files in s3');
     return;
   }
-
+console.log(fileList)
   for (let i = 0; i < fileList.length; i++) {
-    const response = await readFromS3(fileList[i]);
-    const {name, extension} = getFileNameAndExtension(fileList[i]);
+    const response = await readFromS3(fileList[i].Key);
+    const {name, extension} = getFileNameAndExtension(fileList[i].Key);
     let failedRecords;
     const content = await response?.Body?.transformToString();
 

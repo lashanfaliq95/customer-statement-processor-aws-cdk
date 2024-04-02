@@ -1,29 +1,25 @@
-import { useEffect, useState } from "react";
 import readFromS3 from "./helpers/readFromS3";
 import { saveAs } from "file-saver";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import FileUpload from "./components/FileUpload";
 import FileList from "./components/FileList";
-import { getFormat } from "./utils";
+import { getFormat, delay } from "./utils";
 import axios from "axios";
 import Button from "react-bootstrap/Button";
+import { ToastContainer } from "react-toastify";
+import {
+  createSuccessNotification,
+  createFailureNotification,
+} from "./helpers/notifications";
 
 function App() {
-  // const [inputList, setInputList] = useState([]);
-  // const [outputList, setOutputList] = useState([]);
-
-  // const { isPending, isError, data, error } = useQuery({
-  //   queryKey: ["job"],
-  //   queryFn: async () => {
-  //     return await axios.get(`${process.env.REACT_APP_BASE_URL}/run-job-cloud`);
-  //   },
-  // });
+  const queryClient = useQueryClient();
 
   const { data: inputList } = useQuery({
-    queryKey: ["inputList"],
+    queryKey: ["bucketList"],
     queryFn: async () => {
       const res = await axios.get(
         `${process.env.REACT_APP_BASE_URL}/file-list/bucket/${process.env.REACT_APP_INPUT_BUCKET_NAME}`
@@ -33,7 +29,7 @@ function App() {
   });
 
   const { data: outputList } = useQuery({
-    queryKey: ["outputList"],
+    queryKey: ["bucketListOutput"],
     queryFn: async () => {
       const res = await axios.get(
         `${process.env.REACT_APP_BASE_URL}/file-list/bucket/${process.env.REACT_APP_OUTPUT_BUCKET_NAME}`
@@ -46,9 +42,17 @@ function App() {
     mutationFn: () => {
       return axios.post(`${process.env.REACT_APP_BASE_URL}/run-job-cloud`);
     },
+    onSuccess: async () => {
+      createSuccessNotification("Successfully ran job");
+      await delay(3000);
+      queryClient.invalidateQueries({ queryKey: ["bucketListOutput"] });
+    },
+    onError: async () => {
+      createFailureNotification("Failed to run job");
+    },
   });
 
-  const uploadMutation = useMutation({
+  const { mutate: uploadMutate } = useMutation({
     mutationFn: (data: any) => {
       const config = {
         headers: {
@@ -62,6 +66,15 @@ function App() {
         config
       );
     },
+    onSuccess: async () => {
+      // Workaround wait for file to upload to s3
+      createSuccessNotification("Successfully uploaded file");
+      await delay(3000);
+      queryClient.invalidateQueries({ queryKey: ["bucketList"] });
+    },
+    onError: async () => {
+      createFailureNotification("Failed to upload file");
+    },
   });
 
   const asyncFunc = async (file: string, isInputBucket: boolean) => {
@@ -71,7 +84,7 @@ function App() {
         ? process.env.REACT_APP_INPUT_BUCKET_NAME!
         : process.env.REACT_APP_OUTPUT_BUCKET_NAME!
     );
-    
+
     const finalBlob = new Blob([blob], {
       type: getFormat(file),
     });
@@ -80,43 +93,44 @@ function App() {
   };
 
   return (
-    <Container fluid style={{ padding: "5%" }}>
-      <Row style={{ textAlign: "center", marginBottom: "20px" }}>
-        <h1>Customer statement processor</h1>
-      </Row>
+    <>
+      <Container fluid style={{ padding: "5%" }}>
+        <Row style={{ textAlign: "center", marginBottom: "20px" }}>
+          <h1>Customer statement processor</h1>
+        </Row>
 
-      <Row>
-        <Col md="4">
-          {inputList && (
-            <FileList list={inputList} onClick={asyncFunc} isInputBucket />
-          )}
-        </Col>
-        <Col
-          md="4"
-          style={{
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <FileUpload
-            OnFileUpload={(data: any) => uploadMutation.mutate(data)}
-          />
-          <Button
-            variant="secondary"
-            onClick={() => {
-              mutation.mutate();
+        <Row>
+          <Col md="4">
+            {inputList && (
+              <FileList list={inputList} onClick={asyncFunc} isInputBucket />
+            )}
+          </Col>
+          <Col
+            md="4"
+            style={{
+              display: "flex",
+              flexDirection: "column",
             }}
-            size="sm"
-            style={{ width: "30%", marginTop: "10px", alignSelf: "center" }}
           >
-            Run Job
-          </Button>
-        </Col>
-        <Col md="4">
-          {outputList && <FileList list={outputList} onClick={asyncFunc} />}
-        </Col>
-      </Row>
-    </Container>
+            <FileUpload OnFileUpload={(data: any) => uploadMutate(data)} />
+            <Button
+              variant="secondary"
+              onClick={() => {
+                mutation.mutate();
+              }}
+              size="sm"
+              style={{ width: "30%", marginTop: "10px", alignSelf: "center" }}
+            >
+              Run Job
+            </Button>
+          </Col>
+          <Col md="4">
+            {outputList && <FileList list={outputList} onClick={asyncFunc} />}
+          </Col>
+        </Row>
+      </Container>
+      <ToastContainer />
+    </>
   );
 }
 

@@ -17,4 +17,6 @@ const getFormat = (file: string) => {
     return format;
   };
 
-  export {getFormat}
+  const delay = (ms:any) => new Promise(res => setTimeout(res, ms));
+
+  export {getFormat,delay}

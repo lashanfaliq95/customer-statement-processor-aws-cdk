@@ -1,6 +1,4 @@
 import s3Connector from '../connectors/s3Connector';
-const fs = require('fs');
-import * as path from 'path';
 
 // Pass readable stream 'doc' to s3
 export async function writeToS3(name: string, ext: string, doc?: any) {

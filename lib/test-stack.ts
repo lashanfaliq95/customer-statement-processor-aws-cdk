@@ -7,47 +7,20 @@ import * as s3Deployment from "aws-cdk-lib/aws-s3-deployment";
 import * as path from "path";
 import * as ecs_patterns from "aws-cdk-lib/aws-ecs-patterns";
 import { ManagedPolicy } from "aws-cdk-lib/aws-iam";
+import * as dotenv from "dotenv";
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
+
 export class TestStack extends cdk.Stack {
   constructor(scope: cdk.App, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
     const inputBucket = new s3.Bucket(this, "inputBucketCSR", {
-      publicReadAccess: true,
-      blockPublicAccess: {
-        blockPublicAcls: true,
-        ignorePublicAcls: true,
-        restrictPublicBuckets: false,
-        blockPublicPolicy: false,
-      },
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
     });
-
-    inputBucket.addToResourcePolicy(
-      new PolicyStatement({
-        actions: ["s3:GetObject"],
-        effect: Effect.ALLOW,
-        principals: [new StarPrincipal()],
-        resources: [inputBucket.arnForObjects("*")],
-      })
-    );
 
     const outputBucket = new s3.Bucket(this, "outputBucketCSR", {
-      publicReadAccess: true,
-      blockPublicAccess: {
-        blockPublicAcls: true,
-        ignorePublicAcls: true,
-        restrictPublicBuckets: false,
-        blockPublicPolicy: false,
-      },
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
     });
-
-    outputBucket.addToResourcePolicy(
-      new PolicyStatement({
-        actions: ["s3:GetObject"],
-        effect: Effect.ALLOW,
-        principals: [new StarPrincipal()],
-        resources: [outputBucket.arnForObjects("*")],
-      })
-    );
 
     const webSiteBucket = new s3.Bucket(this, "customerStatementFrontend", {
       websiteIndexDocument: "index.html",
@@ -60,7 +33,7 @@ export class TestStack extends cdk.Stack {
       },
     });
 
-    new s3Deployment.BucketDeployment(this, "websiteDeploy", {
+    const deployedBucket=new s3Deployment.BucketDeployment(this, "websiteDeploy", {
       sources: [
         s3Deployment.Source.asset(
           path.join(__dirname, "..", "customer-statement-frontend", "build")
@@ -98,9 +71,9 @@ export class TestStack extends cdk.Stack {
           image: ecs.AssetImage.fromAsset("./customer-statement-processor"),
           containerPort: 8000,
           environment: {
-            AWS_ACCESS_KEY_ID: "AKIAQ3EGUOJUPNUWLHW7",
-            AWS_SECRET_ACCESS_KEY: "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",
-            AWS_REGION: "eu-west-1",
+            AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID!,
+            AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY!,
+            AWS_REGION:process.env.AWS_REGION!,
             INPUT_BUCKET_NAME: inputBucket.bucketName!,
             OUTPUT_BUCKET_NAME: outputBucket.bucketName!,
           },
@@ -111,6 +84,11 @@ export class TestStack extends cdk.Stack {
         assignPublicIp: true,
       }
     );
+
+    outputBucket.grantRead(service.taskDefinition.taskRole);
+    inputBucket.grantRead(service.taskDefinition.taskRole);
+    outputBucket.grantWrite(service.taskDefinition.taskRole);
+    inputBucket.grantWrite(service.taskDefinition.taskRole);
 
     service.targetGroup.configureHealthCheck({
       path: "/",
@@ -132,7 +110,7 @@ export class TestStack extends cdk.Stack {
     });
 
     new cdk.CfnOutput(this, "frontendBucketCSROutput", {
-      value: webSiteBucket.bucketName!,
+      value: webSiteBucket.bucketWebsiteUrl!,
     });
   }
 }

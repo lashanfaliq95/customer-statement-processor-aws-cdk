@@ -8,7 +8,8 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
-    "cdk": "cdk"
+    "cdk": "cdk",
+    "build-all": "./build.sh"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
@@ -22,6 +23,7 @@
   "dependencies": {
     "aws-cdk-lib": "2.134.0",
     "constructs": "^10.0.0",
+    "dotenv": "^16.4.5",
     "source-map-support": "^0.5.21"
   }
 }

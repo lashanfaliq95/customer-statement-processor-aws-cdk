@@ -7,6 +7,7 @@ import createPdf from '../helpers/createPdf';
 import { getFileNameAndExtension } from '../utils';
 
 export default async function runLocally() {
+  try{
   const READ_DIRECTORY = process.env.INPUT_DIRECTORY_NAME!;
   const filenames = await readFiles(READ_DIRECTORY);
 
@@ -25,5 +26,7 @@ export default async function runLocally() {
       const content = await parseXmlData(data.toString());
       await createPdf(content, name, '.xml');
     }
+  }}catch(err){
+    console.error('Job failed to run locally err:',err)
   }
 }

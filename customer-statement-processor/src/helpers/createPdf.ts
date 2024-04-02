@@ -9,7 +9,7 @@ export default function createPdf(
   let doc = new PDFDocument({margin: 30, size: 'A4'});
   const table = {
     title: 'Failed Customer Statements',
-    headers: ['Transaction Reference', 'Description'],
+    headers: ['Transaction Reference', 'Description', "Failure reason"],
     rows: records,
   };
   return new Promise((resolve, reject) => {
@@ -20,8 +20,8 @@ export default function createPdf(
     );
     doc.pipe(writeStream);
     doc.table(table, {
-      width: 200,
-      columnsSize: [100, 100],
+      width: 300,
+      columnsSize: [100, 100,100],
     });
     doc.end();
     writeStream

@@ -1,6 +1,4 @@
-import * as express from 'express';
-import * as cors from 'cors';
-import * as bodyParser from 'body-parser';
+import {Express} from 'express';
 import * as multiparty from 'multiparty';
 
 import runOnCloud from './services/runOnCloud';
@@ -8,7 +6,11 @@ import runLocally from './services/runLocally';
 import {getListFromS3} from './helpers/getFileListFromS3';
 import {writeToS3Service} from './services/writeToS3Service';
 import {readFromS3} from './helpers/readFromS3Stream';
-const app = express();
+
+const express = require('express');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const app: Express = express();
 const PORT = '8000';
 
 var corsOptions = {
@@ -22,24 +24,31 @@ app.use(bodyParser());
 app.use(cors(corsOptions));
 
 // To run the job on cloud using s3's
-app.post('/run-job-cloud', (req, res) => {
+app.post('/run-job-cloud', (_req, res) => {
   console.log('Starting job...');
-  runOnCloud();
-  res.sendStatus(200);
+  if (process.env.AWS_ACCESS_KEY_ID) {
+    // Only run if there are aws credentials
+    runOnCloud();
+    res.sendStatus(200);
+  } else {
+    res.sendStatus(500);
+  }
 });
 
 // To run the job on locally using files in directories
-app.post('/run-job-local', async (req, res) => {
+app.post('/run-job-local', async (_req, res) => {
   runLocally();
   res.sendStatus(200);
 });
 
 app.post('/upload-file/bucket/:bucketId', async (req, res) => {
   var form = new multiparty.Form();
-  form.parse(req, async function (err: any, fields: any, files: any) {
-    // const binBuffer = Buffer.from(files.file);
-console.log(files.file[0])
-    await writeToS3Service(files.file[0], fields.name[0]);
+  form.parse(req, async function (err: any, _fields: any, files: any) {
+    if (err) {
+      res.sendStatus(500);
+    }
+
+    await writeToS3Service(files.file[0]);
 
     res.sendStatus(200);
   });
@@ -51,11 +60,9 @@ app.get('/bucket/:bucketId/:file', async (req, res) => {
 
   const result: any = await readFromS3(file, bucket);
   result.Body.pipe(res);
-
-  // res.status(200).send(result);
 });
 // Standard health check
-app.get('/', async (req, res) => {
+app.get('/', async (_req, res) => {
   res.sendStatus(200);
 });
 

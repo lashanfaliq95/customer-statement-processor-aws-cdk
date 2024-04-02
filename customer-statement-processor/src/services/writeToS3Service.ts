@@ -1,9 +1,8 @@
 import s3Connector from '../connectors/s3Connector';
 import {promises as fs} from 'fs';
-import * as path from 'path';
 import {Upload} from '@aws-sdk/lib-storage';
 
-export async function writeToS3Service(file: any, name: any) {
+export async function writeToS3Service(file: any) {
   const data = await fs.readFile(file.path);
 
   try {
@@ -23,7 +22,7 @@ export async function writeToS3Service(file: any, name: any) {
     });
 
   
-    console.log('Inserting file to bucket file:', name);
+    console.log('Inserting file to bucket file1:', file.originalFilename,);
 
     await parallelUploads3.done();
   } catch (e) {

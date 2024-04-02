@@ -1,0 +1,1 @@
+{"version":3,"file":"s3Connector.js","sourceRoot":"","sources":["s3Connector.ts"],"names":[],"mappings":";;AAAA,kDAAsC;AAEtC,MAAM,WAAW,GAAG,IAAI,cAAE,CAAC;IACzB,MAAM,EAAE,WAAW;IACnB,WAAW,EAAE;QACX,WAAW,EAAE,OAAO,CAAC,GAAG,CAAC,iBAAkB;QAC3C,eAAe,EAAE,OAAO,CAAC,GAAG,CAAC,qBAAsB;KACpD;CACF,CAAC,CAAC;AAEH,kBAAe,WAAW,CAAC"}
